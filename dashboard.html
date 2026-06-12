@@ -1,0 +1,122 @@
+{% extends "admin/admin_layout.html" %}
+{% block title %}أعضاء هيئة التدريس — لوحة الإدارة{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="ms-h2 mb-0"><i class="bi bi-people-fill text-brand me-2"></i> أعضاء هيئة التدريس</h1>
+    <small class="text-muted">{{ teachers|length }} عضو مسجل في النظام</small>
+  </div>
+  <button class="btn btn-gradient rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addTeacherModal">
+    <i class="bi bi-plus-lg me-1"></i> إضافة أستاذ
+  </button>
+</div>
+
+<div class="ms-table-wrap">
+  <div class="table-responsive">
+    <table id="teachersTable" class="table table-hover align-middle mb-0">
+      <thead><tr>
+        <th class="ps-4">الأستاذ</th><th>البريد الإلكتروني</th><th class="text-center">الإجراءات</th>
+      </tr></thead>
+      <tbody>
+        {% for teacher in teachers %}
+        <tr>
+          <td class="ps-4">
+            <div class="d-flex align-items-center gap-2">
+              <img src="https://ui-avatars.com/api/?name={{ teacher.full_name }}&background=2563EB&color=fff&size=64&bold=true" class="rounded-circle" width="36" height="36" alt="">
+              <span class="fw-bold">{{ teacher.full_name }}</span>
+            </div>
+          </td>
+          <td><span class="ms-badge--muted ms-badge"><i class="bi bi-envelope"></i>{{ teacher.email }}</span></td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-soft rounded-pill px-3" onclick="openEditModal('{{ teacher.id }}', '{{ teacher.full_name }}', '{{ teacher.email }}')"><i class="bi bi-pencil-square me-1"></i> تعديل</button>
+            <button class="btn btn-sm btn-soft rounded-pill px-3" onclick="confirmResetPassword('{{ teacher.id }}', '{{ teacher.full_name }}')"><i class="bi bi-key me-1"></i> إعادة تعيين</button>
+            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="confirmDeleteTeacher('{{ teacher.id }}', '{{ teacher.full_name }}')"><i class="bi bi-trash me-1"></i> حذف</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add modal -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-2xl shadow">
+      <div class="modal-header border-0"><h5 class="fw-bold m-0"><i class="bi bi-person-plus text-brand me-2"></i>تسجيل أستاذ جديد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form action="/admin/add_teacher" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body pt-0">
+          <div class="mb-3"><label class="form-label">الاسم الكامل</label><input type="text" name="name" class="form-control" id="tName" required oninput="generateInfo()"></div>
+          <div class="mb-3"><label class="form-label text-brand">البريد الإلكتروني <small class="text-muted">(تلقائي)</small></label><input type="email" name="email" class="form-control" id="tEmail" readonly style="background:var(--ms-bg-soft);"></div>
+          <div class="mb-3"><label class="form-label text-brand">كلمة المرور <small class="text-muted">(تلقائي)</small></label><input type="text" name="password" class="form-control" id="tPass" readonly style="background:var(--ms-bg-soft);"></div>
+          <button type="submit" class="btn btn-gradient w-100">حفظ الأستاذ في النظام</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal fade" id="editTeacherModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-2xl shadow">
+      <div class="modal-header border-0"><h5 class="fw-bold m-0"><i class="bi bi-pencil-square text-brand me-2"></i>تعديل بيانات الأستاذ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form action="/admin/edit_teacher" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body pt-0">
+          <input type="hidden" name="id" id="edit_tId">
+          <div class="mb-3"><label class="form-label">الاسم الكامل</label><input type="text" name="name" id="edit_tName" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label">البريد الإلكتروني</label><input type="email" name="email" id="edit_tEmail" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label">كلمة المرور <small class="text-muted">(اتركها فارغة للإبقاء على الحالية)</small></label><input type="text" name="password" id="edit_tPass" class="form-control" placeholder="•••••••• — لن تتغير ما لم تُدخل قيمة" autocomplete="new-password"></div>
+          <button type="submit" class="btn btn-primary w-100">حفظ التغييرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function () {
+  $('#teachersTable').DataTable({ language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json" }, pageLength: 10, lengthMenu: [10, 25, 50], ordering: false, responsive: true });
+});
+
+function confirmDeleteTeacher(id, name) {
+  Swal.fire({ title: 'هل أنت متأكد؟', text: 'سيتم حذف حساب الأستاذ "' + name + '" نهائياً.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#64748B', confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', reverseButtons: true })
+    .then(function (r) { if (r.isConfirmed) window.location.href = "/admin/delete_teacher/" + id; });
+}
+
+function confirmResetPassword(id, name) {
+  Swal.fire({ title: 'إعادة تعيين كلمة المرور', text: 'سيتم توليد كلمة مرور جديدة للأستاذ "' + name + '" وعرضها لك مرة واحدة.', icon: 'question', showCancelButton: true, confirmButtonColor: '#2563EB', cancelButtonColor: '#64748B', confirmButtonText: 'نعم، أعد التعيين', cancelButtonText: 'إلغاء', reverseButtons: true })
+    .then(function (r) { if (r.isConfirmed) window.location.href = "/admin/reset_password/" + id; });
+}
+
+function generateInfo() {
+  var name = document.getElementById('tName').value;
+  if (name.length > 2) {
+    var n = Math.floor(100 + Math.random() * 899);
+    document.getElementById('tEmail').value = "teacher" + n + "@musaid.edu.ly";
+    document.getElementById('tPass').value = Math.random().toString(36).slice(-8);
+  }
+}
+
+function openEditModal(id, name, email) {
+  document.getElementById('edit_tId').value = id;
+  document.getElementById('edit_tName').value = name;
+  document.getElementById('edit_tEmail').value = email;
+  document.getElementById('edit_tPass').value = '';
+  new bootstrap.Modal(document.getElementById('editTeacherModal')).show();
+}
+</script>
+{% endblock %}
