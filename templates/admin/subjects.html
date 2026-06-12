@@ -1,0 +1,109 @@
+{% extends "admin/admin_layout.html" %}
+{% block title %}إدارة المواد — لوحة الإدارة{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="ms-h2 mb-0"><i class="bi bi-book-half text-brand me-2"></i> إدارة المواد الدراسية</h1>
+    <small class="text-muted">{{ subjects|length }} مادة مسجلة في النظام</small>
+  </div>
+  <button class="btn btn-gradient rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+    <i class="bi bi-plus-lg me-1"></i> إضافة مادة
+  </button>
+</div>
+
+<!-- Smart summary -->
+<div class="ms-glass p-4 mb-4 ms-fade-up">
+  <h5 class="fw-bold mb-3"><i class="bi bi-stars text-brand me-2"></i> ملخص ذكي</h5>
+  <p class="text-muted mb-0">
+    لديك حالياً <strong>{{ subjects|length }}</strong> مادة مسجلة في النظام.
+    {% if subjects|length == 0 %}
+      لم يتم إضافة أي مادة بعد، ننصح ببدء إدخال المواد الأساسية للفصل الدراسي.
+    {% else %}
+      {% set comp_count = subjects|selectattr("dept_id","equalto",1)|list|length %}
+      {% set acc_count = subjects|selectattr("dept_id","equalto",2)|list|length %}
+      {% if comp_count > acc_count %}
+        قسم <strong>تقنيات الحاسوب</strong> يحتوي على أكبر عدد من المواد، مما يعكس نشاطاً جيداً.
+      {% elif acc_count > comp_count %}
+        قسم <strong>العلوم الإدارية</strong> يحتوي على أكبر عدد من المواد، ويستحق الإشادة على زيادة المحتوى.
+      {% else %}
+        الأقسام متوازنة في عدد المواد، وهذا مؤشر إيجابي على توزيع الجهد.
+      {% endif %}
+    {% endif %}
+  </p>
+</div>
+
+<div class="ms-table-wrap">
+  <div class="table-responsive">
+    <table id="subjectsTable" class="table table-hover align-middle mb-0">
+      <thead><tr>
+        <th class="ps-4">اسم المادة</th><th>القسم العلمي</th><th>الفصل</th><th class="text-center">الإجراءات</th>
+      </tr></thead>
+      <tbody>
+        {% for subject in subjects %}
+        <tr>
+          <td class="ps-4 fw-bold">{{ subject.subject_name }}</td>
+          <td>
+            <span class="ms-badge">{% if subject.dept_id == 1 %}تقنيات الحاسوب{% else %}محاسبة{% endif %}</span>
+          </td>
+          <td>الفصل {{ subject.semester }}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="confirmDelete('{{ subject.id }}', '{{ subject.subject_name }}')">
+              <i class="bi bi-trash me-1"></i> حذف
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add modal -->
+<div class="modal fade" id="addSubjectModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-2xl shadow">
+      <div class="modal-header border-0"><h5 class="fw-bold m-0"><i class="bi bi-plus-circle text-brand me-2"></i>إضافة مادة دراسية</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form action="/admin/add_subject" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body pt-0">
+          <div class="mb-3"><label class="form-label">اسم المادة</label><input type="text" name="subject_name" class="form-control" required placeholder="مثلاً: شبكات الحاسوب"></div>
+          <div class="mb-3"><label class="form-label">القسم العلمي المخصص</label>
+            <select name="dept_id" class="form-select" required>
+              <option value="1">قسم تقنيات الحاسوب (تقنية المعلومات)</option>
+              <option value="2">قسم العلوم الإدارية والمالية (محاسبة)</option>
+            </select>
+          </div>
+          <div class="mb-3"><label class="form-label">الفصل الدراسي</label>
+            <select name="semester" class="form-select" required>
+              {% for i in range(1, 7) %}<option value="{{ i }}">الفصل الدراسي {{ i }}</option>{% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-gradient w-100">حفظ المادة في النظام</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function () {
+  $('#subjectsTable').DataTable({ language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json" }, pageLength: 10, ordering: false, responsive: true });
+});
+
+function confirmDelete(subjectId, subjectName) {
+  Swal.fire({ title: 'هل أنت متأكد؟', text: 'سيتم حذف مادة "' + subjectName + '" نهائياً من النظام والجدول الدراسي.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#64748B', confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', reverseButtons: true })
+    .then(function (r) { if (r.isConfirmed) window.location.href = "/admin/delete_subject/" + subjectId; });
+}
+</script>
+{% endblock %}

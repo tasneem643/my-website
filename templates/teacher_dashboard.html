@@ -1,0 +1,205 @@
+{% extends "layout.html" %}
+{% block title %}لوحة الأستاذ — {{ name }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="mb-4 ms-fade-up">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1">
+    <li class="breadcrumb-item"><a href="/" class="text-decoration-none">المكتبة</a></li>
+    <li class="breadcrumb-item active">لوحة الأستاذ</li>
+  </ol></nav>
+  <h1 class="ms-h2 mb-0"><i class="bi bi-person-workspace text-brand me-1"></i> مرحباً، {{ name }}</h1>
+</div>
+
+{% if ai_alert %}
+<div class="ms-glass d-flex align-items-center gap-3 p-3 mb-4">
+  <i class="bi bi-bell-fill fs-4 text-warning"></i><span class="fw-semibold">{{ ai_alert }}</span>
+</div>
+{% endif %}
+
+<!-- Personal stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="ms-stat ms-fade-up h-100"><div class="d-flex align-items-center gap-3">
+      <div class="ms-stat-icon"><i class="bi bi-collection-fill"></i></div>
+      <div><div class="ms-stat-value">{{ my_count }}</div><div class="ms-stat-label">مذكراتي هذا الفصل</div></div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="ms-stat ms-stat--success ms-fade-up-2 h-100"><div class="d-flex align-items-center gap-3">
+      <div class="ms-stat-icon"><i class="bi bi-bookmark-star-fill"></i></div>
+      <div><div class="ms-stat-value" style="font-size:1.3rem;">{{ top_subject if top_subject else "—" }}</div><div class="ms-stat-label">أكثر مادة رفعاً</div></div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="ms-stat ms-stat--warning ms-fade-up-3 h-100"><div class="d-flex align-items-center gap-3">
+      <div class="ms-stat-icon"><i class="bi bi-pie-chart-fill"></i></div>
+      <div><div class="ms-stat-value">{{ participation }}%</div><div class="ms-stat-label">نسبة مشاركتك</div></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Profile -->
+  <div class="col-lg-4">
+    <div class="card text-center p-4 sticky-top ms-fade-up" style="top:90px;">
+      <img src="https://ui-avatars.com/api/?name={{ name }}&background=2563EB&color=fff&size=128&bold=true" class="rounded-circle mx-auto mb-3 shadow-sm" width="96" height="96" alt="{{ name }}">
+      <h4 class="fw-bold mb-0">{{ name }}</h4>
+      <p class="text-muted">عضو هيئة تدريس</p>
+      <hr class="ms-divider">
+      <p class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i> ارفع مذكراتك وأدِرها بسهولة من هنا.</p>
+    </div>
+  </div>
+
+  <!-- Upload + archive -->
+  <div class="col-lg-8">
+    <div class="card mb-4 ms-fade-up-2">
+      <div class="card-header py-3"><h5 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up-fill text-brand me-2"></i> رفع مذكرة جديدة</h5></div>
+      <div class="card-body">
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-2 mb-3">
+            <div class="col-md-4">
+              <select class="form-select" id="dept_select" name="dept_id" required>
+                <option value="">القسم</option>
+                {% for dept in depts %}<option value="{{ dept.id }}">{{ dept.dept_name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4"><select class="form-select" id="semester_select" name="semester" required><option value="">الفصل</option></select></div>
+            <div class="col-md-4"><select class="form-select" id="subject_select" name="subject_id" required><option value="">المادة</option></select></div>
+          </div>
+
+          <input type="text" name="title" class="form-control mb-3" placeholder="عنوان المذكرة" required>
+          <textarea name="notes" class="form-control mb-2" rows="2" placeholder="ملاحظات (اختياري)"></textarea>
+
+          <div class="ms-input-icon mb-3">
+            <i class="bi bi-tags"></i>
+            <input type="text" id="keywordsBox" class="form-control" readonly placeholder="كلمات مفتاحية تُولَّد تلقائياً…" style="background:var(--ms-bg-soft);">
+          </div>
+
+          <label class="ms-dropzone w-100 mb-3" id="dropLabel" style="display:block;cursor:pointer;border:2px dashed var(--ms-border-strong);border-radius:var(--ms-radius);padding:1.5rem;text-align:center;color:var(--ms-text-muted);transition:.2s;">
+            <i class="bi bi-file-earmark-arrow-up fs-3 d-block mb-1 text-brand"></i>
+            <span id="dropText">اسحب الملفات هنا أو اضغط للاختيار</span>
+            <input type="file" name="files[]" id="fileInput" class="d-none" multiple required>
+          </label>
+
+          <div class="progress mb-3 d-none" id="progressWrapper" style="height:1.4rem;border-radius:var(--ms-radius-pill);">
+            <div id="progressBar" class="progress-bar fw-bold" style="width:0%;background:var(--ms-gradient-primary);">0%</div>
+          </div>
+
+          <button class="btn btn-gradient w-100" id="uploadBtn"><i class="bi bi-upload me-1"></i> رفع المذكرة</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card ms-fade-up-3">
+      <div class="card-header py-3"><h5 class="fw-bold mb-0"><i class="bi bi-archive-fill text-brand me-2"></i> أرشيف مذكراتي</h5></div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="archiveTable" class="table table-hover align-middle">
+            <thead><tr><th>المادة</th><th>العنوان</th><th>الفصل</th><th class="text-center">المشاهدات</th><th class="text-center">التحميلات</th><th class="text-center">إجراءات</th></tr></thead>
+            <tbody>
+              {% for item in my_handouts %}
+              <tr>
+                <td><span class="ms-badge">{{ item.subject_name }}</span></td>
+                <td class="fw-semibold">{{ item.title }}</td>
+                <td>الفصل {{ item.semester }}</td>
+                <td class="text-center"><i class="bi bi-eye text-muted me-1"></i>{{ item.view_count or 0 }}</td>
+                <td class="text-center"><i class="bi bi-cloud-download text-muted me-1"></i>{{ item.download_count or 0 }}</td>
+                <td class="text-center">
+                  <a href="{{ url_for('uploaded_file', filename=item.file_path) }}" target="_blank" class="btn btn-sm btn-soft rounded-pill px-3"><i class="bi bi-eye"></i></a>
+                  <button onclick="confirmDelete('{{ item.id }}')" class="btn btn-sm btn-outline-danger rounded-pill px-3"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function () {
+  $('#archiveTable').DataTable({ language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json" } });
+});
+
+function confirmDelete(id) {
+  Swal.fire({ title: 'تأكيد الحذف', text: 'لا يمكن التراجع عن هذا الإجراء!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#64748B', confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء' })
+    .then(function (r) { if (r.isConfirmed) window.location = "/delete_handout/" + id; });
+}
+
+// Dynamic selects
+var deptSelect = document.getElementById('dept_select');
+var semSelect = document.getElementById('semester_select');
+var subSelect = document.getElementById('subject_select');
+
+deptSelect.onchange = function () {
+  fetch('/get_semesters/' + deptSelect.value).then(function (r) { return r.json(); }).then(function (d) {
+    semSelect.innerHTML = '<option value="">الفصل</option>';
+    d.semesters.forEach(function (s) { semSelect.innerHTML += '<option value="' + s.id + '">فصل ' + s.number + '</option>'; });
+  });
+};
+semSelect.onchange = function () {
+  fetch('/get_subjects/' + deptSelect.value + '/' + semSelect.value).then(function (r) { return r.json(); }).then(function (d) {
+    subSelect.innerHTML = '<option value="">المادة</option>';
+    d.subjects.forEach(function (s) { subSelect.innerHTML += '<option value="' + s.id + '">' + s.name + '</option>'; });
+  });
+};
+
+// Drag & drop file input
+var fileInput = document.getElementById('fileInput');
+var dropLabel = document.getElementById('dropLabel');
+var dropText = document.getElementById('dropText');
+fileInput.addEventListener('change', function () {
+  dropText.textContent = fileInput.files.length ? (fileInput.files.length + ' ملف جاهز للرفع') : 'اسحب الملفات هنا أو اضغط للاختيار';
+});
+['dragover', 'dragenter'].forEach(function (ev) { dropLabel.addEventListener(ev, function (e) { e.preventDefault(); dropLabel.style.borderColor = 'var(--ms-primary)'; dropLabel.style.background = 'rgba(37,99,235,.05)'; }); });
+['dragleave', 'drop'].forEach(function (ev) { dropLabel.addEventListener(ev, function (e) { e.preventDefault(); dropLabel.style.borderColor = 'var(--ms-border-strong)'; dropLabel.style.background = 'transparent'; }); });
+dropLabel.addEventListener('drop', function (e) { if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); } });
+
+// Upload with progress
+document.getElementById('uploadForm').onsubmit = function (e) {
+  e.preventDefault();
+  var xhr = new XMLHttpRequest();
+  var bar = document.getElementById('progressBar');
+  document.getElementById('progressWrapper').classList.remove('d-none');
+  xhr.upload.onprogress = function (ev) {
+    if (ev.lengthComputable) { var p = Math.round((ev.loaded / ev.total) * 100); bar.style.width = p + '%'; bar.textContent = p + '%'; }
+  };
+  xhr.onload = function () {
+    if (xhr.status === 200) Swal.fire({ icon: 'success', title: 'تم الرفع بنجاح', timer: 1400, showConfirmButton: false }).then(function () { location.reload(); });
+    else Swal.fire({ icon: 'error', title: 'تعذّر الرفع' });
+  };
+  xhr.open('POST', '/upload');
+  xhr.send(new FormData(this));
+};
+
+// Auto keywords
+var titleInput = document.querySelector('input[name="title"]');
+var notesInput = document.querySelector('textarea[name="notes"]');
+var keywordsBox = document.getElementById('keywordsBox');
+function extractKeywords(text) {
+  if (!text) return '';
+  var stop = ["من", "في", "على", "الى", "عن", "مع", "the", "and", "for"];
+  text = text.replace(/[^\w\s؀-ۿ]/g, '');
+  var words = text.split(/\s+/).filter(function (w) { return w.length > 3 && stop.indexOf(w.toLowerCase()) === -1; });
+  var freq = {}; words.forEach(function (w) { freq[w] = (freq[w] || 0) + 1; });
+  return Object.keys(freq).sort(function (a, b) { return freq[b] - freq[a]; }).slice(0, 5).join(' · ');
+}
+function updateKeywords() { keywordsBox.value = extractKeywords((titleInput.value + ' ' + notesInput.value).trim()); }
+titleInput.addEventListener('input', updateKeywords);
+notesInput.addEventListener('input', updateKeywords);
+updateKeywords();
+</script>
+{% endblock %}

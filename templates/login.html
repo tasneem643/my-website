@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+{% block title %}تسجيل الدخول — منصة المذكرات الرقمية{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: calc(100vh - 160px);">
+  <div class="col-xl-9 col-lg-11">
+    <div class="ms-glass rounded-2xl overflow-hidden ms-fade-up">
+      <div class="row g-0">
+
+        <!-- Brand / aurora panel -->
+        <div class="col-lg-6 d-none d-lg-flex ms-aurora text-white p-5 flex-column justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            <img src="{{ url_for('static', filename='images/logo.webp') }}" width="56" alt="شعار المعهد">
+            <div class="lh-1">
+              <div class="fw-bold fs-5">منصة المذكرات الرقمية</div>
+              <small class="opacity-75">المعهد العالي للعلوم والتقنية أمساعد</small>
+            </div>
+          </div>
+
+          <div>
+            <h2 class="fw-bold mb-3" style="font-size:2rem;">بوابة أعضاء<br>هيئة التدريس</h2>
+            <p class="opacity-75 mb-4">ارفع مذكراتك، تابع إحصائياتك، وأدِر محتواك الأكاديمي من مكان واحد.</p>
+            <ul class="list-unstyled d-grid gap-2 mb-0">
+              <li><i class="bi bi-check-circle-fill me-2"></i> رفع وإدارة المذكرات بسهولة</li>
+              <li><i class="bi bi-check-circle-fill me-2"></i> إحصائيات فورية عن نشاطك</li>
+              <li><i class="bi bi-check-circle-fill me-2"></i> وصول آمن ومنظّم</li>
+            </ul>
+          </div>
+
+          <small class="opacity-50">© منصة مساعد — جميع الحقوق محفوظة</small>
+        </div>
+
+        <!-- Form panel -->
+        <div class="col-lg-6 bg-surface p-4 p-md-5">
+          <div class="text-center mb-4">
+            <div class="ms-avatar mx-auto mb-3" style="width:60px;height:60px;font-size:1.6rem;">
+              <i class="bi bi-shield-lock"></i>
+            </div>
+            <h1 class="ms-h2 mb-1">تسجيل الدخول</h1>
+            <p class="text-muted mb-0">خاص بأعضاء هيئة التدريس والإدارة</p>
+          </div>
+
+          <form action="/login" method="POST" id="loginForm" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-floating mb-3">
+              <input type="email" name="email" id="loginEmail" class="form-control" placeholder="name@musaid.edu.ly" required autocomplete="username">
+              <label for="loginEmail"><i class="bi bi-envelope me-1"></i> البريد الإلكتروني</label>
+            </div>
+
+            <div class="form-floating mb-2 position-relative">
+              <input type="password" name="password" id="loginPassword" class="form-control" placeholder="كلمة المرور" required autocomplete="current-password" style="padding-inline-end:3rem;">
+              <label for="loginPassword"><i class="bi bi-key me-1"></i> كلمة المرور</label>
+              <button type="button" class="btn btn-icon position-absolute top-50 translate-middle-y text-muted" style="inset-inline-end:.35rem;" data-toggle-password="#loginPassword" tabindex="-1" aria-label="إظهار كلمة المرور">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="rememberMe">
+                <label class="form-check-label small" for="rememberMe">تذكّر بريدي</label>
+              </div>
+              <a href="#" class="small text-decoration-none" data-bs-toggle="modal" data-bs-target="#forgotModal">نسيت كلمة المرور؟</a>
+            </div>
+
+            <button type="submit" class="btn btn-gradient btn-lg w-100" id="loginBtn">
+              <span class="ms-btn-text"><i class="bi bi-box-arrow-in-left me-1"></i> دخول للمنصة</span>
+              <span class="ms-btn-loading d-none"><span class="spinner-border spinner-border-sm me-2"></span> جارٍ التحقق…</span>
+            </button>
+          </form>
+
+          <hr class="ms-divider">
+          <div class="text-center">
+            <a href="/" class="text-decoration-none text-muted small"><i class="bi bi-arrow-right ms-1"></i> العودة إلى المكتبة</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forgot password info modal -->
+<div class="modal fade" id="forgotModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-2xl">
+      <div class="modal-body p-4 text-center">
+        <div class="ms-empty-icon mx-auto"><i class="bi bi-life-preserver"></i></div>
+        <h5 class="fw-bold">استعادة الوصول</h5>
+        <p class="text-muted mb-4">إعادة تعيين كلمة المرور تتم عبر مدير النظام. يرجى التواصل مع الإدارة لاستعادة بيانات الدخول.</p>
+        <button class="btn btn-soft rounded-pill px-4" data-bs-dismiss="modal">حسناً، فهمت</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById('loginForm');
+  var btn = document.getElementById('loginBtn');
+  var email = document.getElementById('loginEmail');
+  var remember = document.getElementById('rememberMe');
+  var KEY = 'ms-login-email';
+
+  // Prefill remembered email
+  try {
+    var saved = localStorage.getItem(KEY);
+    if (saved) { email.value = saved; remember.checked = true; }
+  } catch (e) {}
+
+  form.addEventListener('submit', function () {
+    try {
+      if (remember.checked) localStorage.setItem(KEY, email.value);
+      else localStorage.removeItem(KEY);
+    } catch (e) {}
+    btn.disabled = true;
+    btn.querySelector('.ms-btn-text').classList.add('d-none');
+    btn.querySelector('.ms-btn-loading').classList.remove('d-none');
+  });
+})();
+</script>
+{% endblock %}

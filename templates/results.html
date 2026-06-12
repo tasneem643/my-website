@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+{% block title %}قسم {{ dept_name }} — الفصل {{ semester }}{% endblock %}
+
+{% block content %}
+<!-- Header + breadcrumb -->
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4 ms-fade-up">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1 small">
+        <li class="breadcrumb-item"><a href="/" class="text-decoration-none">المكتبة</a></li>
+        <li class="breadcrumb-item active">نتائج البحث</li>
+      </ol>
+    </nav>
+    <h1 class="ms-h2 mb-0">
+      <i class="bi bi-folder2-open text-brand me-1"></i>
+      قسم {{ dept_name }} <span class="text-muted">· الفصل {{ semester }}</span>
+    </h1>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <div class="btn-group" role="group" aria-label="نمط العرض">
+      <button class="btn btn-soft btn-sm active" id="gridViewBtn" title="عرض شبكي"><i class="bi bi-grid-3x3-gap-fill"></i></button>
+      <button class="btn btn-soft btn-sm" id="listViewBtn" title="عرض قائمة"><i class="bi bi-list-ul"></i></button>
+    </div>
+    <a href="/" class="btn btn-soft btn-sm rounded-pill px-3"><i class="bi bi-arrow-right me-1"></i> بحث جديد</a>
+  </div>
+</div>
+
+<!-- Quick stats -->
+<div class="ms-glass p-3 mb-4 d-flex flex-wrap gap-4 align-items-center ms-fade-up">
+  <span class="fw-bold"><i class="bi bi-bar-chart-fill text-brand me-1"></i> إحصائيات سريعة</span>
+  <span class="text-muted small"><i class="bi bi-collection me-1"></i> عدد المذكرات: <strong>{{ results|length }}</strong></span>
+  {% if top_subject %}<span class="text-muted small"><i class="bi bi-bookmark-star me-1"></i> أكثر مادة: <strong>{{ top_subject }}</strong></span>{% endif %}
+</div>
+
+<!-- Live search -->
+<div class="ms-input-icon mb-4 ms-fade-up" style="max-width:560px;">
+  <i class="bi bi-search"></i>
+  <input type="text" id="liveSearch" class="form-control form-control-lg rounded-pill" placeholder="ابحث باسم المادة أو المحاضرة أو الأستاذ…" aria-label="بحث مباشر">
+</div>
+
+<!-- Results -->
+<div class="row g-3" id="resultsGrid">
+  {% for item in results %}
+  <div class="col-md-6 col-lg-4 result-card" data-search="{{ item.title }} {{ item.subject_name }} {{ item.teacher_name }}">
+    <div class="card ms-card-hover h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          {% set ext = item.file_path|lower %}
+          {% if '.ppt' in ext %}
+            <div class="ms-filechip ms-filechip--ppt"><i class="bi bi-filetype-pptx"></i></div>
+          {% elif '.doc' in ext %}
+            <div class="ms-filechip ms-filechip--doc"><i class="bi bi-filetype-docx"></i></div>
+          {% else %}
+            <div class="ms-filechip ms-filechip--pdf"><i class="bi bi-filetype-pdf"></i></div>
+          {% endif %}
+          <div class="flex-grow-1" style="min-width:0;">
+            <h5 class="fw-bold mb-1 ms-clamp-2" title="{{ item.title }}">{{ item.title }}</h5>
+            <span class="ms-badge">{{ item.subject_name }}</span>
+          </div>
+        </div>
+
+        {% if item.flash_summary %}
+        <div class="rounded-3 p-3 mb-3" style="background:var(--ms-bg-soft);">
+          <small class="text-brand fw-bold d-block mb-1"><i class="bi bi-stars me-1"></i> ملخص سريع</small>
+          <p class="small text-muted mb-0 ms-clamp-3">{{ item.flash_summary }}</p>
+        </div>
+        {% endif %}
+
+        <div class="text-muted small mb-2 d-flex flex-wrap align-items-center gap-3">
+          <span><i class="bi bi-person-badge me-1"></i> {{ item.teacher_name }}</span>
+          <span title="مشاهدات"><i class="bi bi-eye me-1"></i>{{ item.view_count or 0 }}</span>
+          <span title="تحميلات"><i class="bi bi-cloud-download me-1"></i>{{ item.download_count or 0 }}</span>
+        </div>
+        {% if item.notes %}
+        <div class="small rounded-3 p-2 mb-3" style="background:var(--ms-bg-soft);border-inline-start:3px solid var(--ms-primary);">
+          <strong>ملاحظة:</strong> {{ item.notes }}
+        </div>
+        {% endif %}
+
+        <div class="mt-auto d-flex gap-2 pt-2">
+          <a href="{{ url_for('uploaded_file', filename=item.file_path) }}" target="_blank" class="btn btn-soft btn-sm rounded-pill flex-grow-1">
+            <i class="bi bi-eye me-1"></i> معاينة
+          </a>
+          <a href="{{ url_for('uploaded_file', filename=item.file_path) }}?dl=1" download="{{ item.file_path }}" class="btn btn-primary btn-sm rounded-pill flex-grow-1">
+            <i class="bi bi-cloud-download me-1"></i> تحميل
+          </a>
+          <button type="button" class="btn btn-soft btn-sm btn-icon rounded-pill ms-bookmark-btn" title="حفظ"
+                  data-bookmark-id="{{ item.id }}"
+                  data-bookmark-title="{{ item.title }}"
+                  data-bookmark-subject="{{ item.subject_name }}"
+                  data-bookmark-file="{{ item.file_path }}">
+            <i class="bi bi-bookmark"></i>
+          </button>
+          <button type="button" class="btn btn-soft btn-sm btn-icon rounded-pill ms-share-btn" title="مشاركة"
+                  data-share-title="{{ item.title }}"
+                  data-share-url="{{ url_for('uploaded_file', filename=item.file_path, _external=True) }}">
+            <i class="bi bi-share"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="card"><div class="ms-empty">
+      <div class="ms-empty-icon"><i class="bi bi-file-earmark-x"></i></div>
+      <h4 class="fw-bold">لا توجد مذكرات حالياً</h4>
+      <p class="text-muted">لم يتم رفع محاضرات لهذا القسم والفصل بعد. تابعنا باستمرار.</p>
+      <a href="/" class="btn btn-gradient rounded-pill px-4">جرّب بحثاً آخر</a>
+    </div></div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  // Live search
+  var search = document.getElementById('liveSearch');
+  var grid = document.getElementById('resultsGrid');
+  search.addEventListener('input', function (e) {
+    var term = e.target.value.toLowerCase();
+    var cards = document.querySelectorAll('.result-card');
+    var found = 0;
+    cards.forEach(function (card) {
+      var match = card.getAttribute('data-search').toLowerCase().includes(term);
+      card.style.display = match ? '' : 'none';
+      if (match) found++;
+    });
+    var msg = document.getElementById('noResultsMsg');
+    if (found === 0 && term !== '') {
+      if (!msg) {
+        msg = document.createElement('div');
+        msg.id = 'noResultsMsg';
+        msg.className = 'col-12 text-center py-4 text-muted';
+        msg.innerHTML = '<h6>عذراً، لا يوجد ما يطابق بحثك.</h6>';
+        grid.appendChild(msg);
+      }
+    } else if (msg) { msg.remove(); }
+  });
+
+  // Grid / list toggle
+  var gridBtn = document.getElementById('gridViewBtn');
+  var listBtn = document.getElementById('listViewBtn');
+  gridBtn.addEventListener('click', function () {
+    grid.classList.remove('list-view'); gridBtn.classList.add('active'); listBtn.classList.remove('active');
+  });
+  listBtn.addEventListener('click', function () {
+    grid.classList.add('list-view'); listBtn.classList.add('active'); gridBtn.classList.remove('active');
+  });
+})();
+</script>
+{% endblock %}

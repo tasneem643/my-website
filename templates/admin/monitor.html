@@ -1,0 +1,85 @@
+{% extends "admin/admin_layout.html" %}
+{% block title %}مراقبة المذكرات — لوحة الإدارة{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="ms-h2 mb-0"><i class="bi bi-display text-brand me-2"></i> مراقبة المذكرات المرفوعة</h1>
+    <small class="text-muted">{{ logs|length }} مذكرة مرفوعة في النظام</small>
+  </div>
+</div>
+
+<!-- Smart summary -->
+<div class="ms-glass p-4 mb-4 ms-fade-up">
+  <h5 class="fw-bold mb-3"><i class="bi bi-stars text-brand me-2"></i> ملخص ذكي</h5>
+  <p class="text-muted mb-0">
+    {% if logs|length == 0 %}
+      لم يتم رفع أي مذكرة بعد، ننصح بمتابعة رفع المحتوى.
+    {% else %}
+      {% set titles = [] %}
+      {% set ns = namespace(duplicates=false) %}
+      {% for log in logs %}
+        {% if log.title in titles %}{% set ns.duplicates = true %}{% else %}{% set _ = titles.append(log.title) %}{% endif %}
+      {% endfor %}
+      {% if ns.duplicates %}
+        هناك مذكرات مكررة بنفس العنوان، ننصح بمراجعتها لتجنب التكرار.
+      {% else %}
+        لا توجد مذكرات مكررة حالياً، النشاط طبيعي.
+      {% endif %}
+    {% endif %}
+  </p>
+</div>
+
+<div class="ms-table-wrap">
+  <div class="table-responsive">
+    <table id="monitorTable" class="table table-hover align-middle mb-0">
+      <thead><tr>
+        <th class="ps-4">المذكرة</th><th>الأستاذ</th><th>القسم / الفصل</th><th>التاريخ</th><th class="text-center">الإجراءات</th>
+      </tr></thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="ps-4">
+            <div class="d-flex align-items-center gap-2">
+              {% set ext = log.file_path|lower %}
+              {% if '.ppt' in ext %}<div class="ms-filechip ms-filechip--ppt"><i class="bi bi-filetype-pptx"></i></div>
+              {% elif '.doc' in ext %}<div class="ms-filechip ms-filechip--doc"><i class="bi bi-filetype-docx"></i></div>
+              {% else %}<div class="ms-filechip ms-filechip--pdf"><i class="bi bi-filetype-pdf"></i></div>{% endif %}
+              <span class="fw-bold">{{ log.title }}</span>
+            </div>
+          </td>
+          <td><span class="text-muted small"><i class="bi bi-person me-1"></i>{{ log.teacher_name }}</span></td>
+          <td><span class="ms-badge">{{ log.dept_name }} · فصل {{ log.semester }}</span></td>
+          <td class="small text-muted">{{ log.upload_date }}</td>
+          <td class="text-center">
+            <a href="/download/{{ log.file_path }}" class="btn btn-sm btn-soft rounded-pill px-3" target="_blank"><i class="bi bi-eye me-1"></i> معاينة</a>
+            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="confirmDeleteLog('{{ log.id }}', '{{ log.title }}')"><i class="bi bi-trash me-1"></i> حذف</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function () {
+  $('#monitorTable').DataTable({ language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json" }, pageLength: 10, order: [[3, "desc"]], columnDefs: [{ orderable: false, targets: 4 }], responsive: true });
+});
+
+function confirmDeleteLog(id, title) {
+  Swal.fire({ title: 'هل أنت متأكد؟', text: 'سيتم حذف المذكرة "' + title + '" والملف الخاص بها نهائياً من النظام.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#64748B', confirmButtonText: 'نعم، احذف الآن', cancelButtonText: 'إلغاء', reverseButtons: true })
+    .then(function (r) { if (r.isConfirmed) window.location.href = "/delete_handout/" + id; });
+}
+</script>
+{% endblock %}
