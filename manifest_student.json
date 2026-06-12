@@ -1,0 +1,42 @@
+{
+  "name": "منصة الطالب - المعهد العالي",
+  "short_name": "طالب",
+  "start_url": "/student_dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2196f3",
+  "icons": [
+    {
+      "src": "/static/images/student_icon.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/static/images/student_icon.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
+}
+=======
+{
+  "name": "منصة الطالب - المعهد العالي",
+  "short_name": "طالب",
+  "start_url": "/student_dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2196f3",
+  "icons": [
+    {
+      "src": "/static/images/student_icon.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/static/images/student_icon.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
+}
+>>>>>>> 2cf725b2e98a689af15fce4f3006d11abd5ebe9d
